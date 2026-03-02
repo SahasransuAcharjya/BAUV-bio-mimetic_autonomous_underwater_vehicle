@@ -1,0 +1,30 @@
+{
+    "serial": {
+      "port": "COM7",
+      "baudrate": 9600,
+      "timeout": 1.0
+    },
+    "dashboard": {
+      "host": "127.0.0.1",
+      "port": 8050,
+      "debug": true,
+      "update_interval_ms": 100
+    },
+    "servo": {
+      "min_angle": 0,
+      "max_angle": 180,
+      "default_angle": 90,
+      "max_frequency_hz": 5.0,
+      "min_frequency_hz": 0.1,
+      "max_amplitude_deg": 60.0,
+      "min_amplitude_deg": 5.0
+    },
+    "logging": {
+      "enable_position_log": true,
+      "enable_serial_log": true,
+      "data_dir": "data",
+      "position_file": "servo_positions.csv",
+      "serial_log_file": "serial_log.txt"
+    }
+  }
+  
