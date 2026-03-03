@@ -2,8 +2,8 @@ import dash
 from dash import dcc, html, Input, Output, callback, State
 import plotly.graph_objs as go
 import serial
-import threading
 import queue
+import threading
 import time
 import numpy as np
 import pandas as pd
@@ -27,21 +27,22 @@ data_queue = queue.Queue()
 ser = None
 connected = False
 status_message = "🔄 Connecting to Arduino..."
-positions = {'x': [], 'y': []}
+positions = {'x': [], 'y': []}  # x=relative time from 0
 log_messages = []
+start_time = time.time()  # Reference for relative time
 
 # Ensure data directory exists
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-def log_position(timestamp, pos):
+def log_position(rel_time, pos):
     filepath = os.path.join(DATA_DIR, "servo_positions.csv")
     try:
         with open(filepath, 'a', newline='') as f:
             writer = csv.writer(f)
             if os.path.getsize(filepath) == 0:
-                writer.writerow(['timestamp', 'position_deg'])
-            writer.writerow([timestamp, pos])
+                writer.writerow(['rel_time_s', 'position_deg'])
+            writer.writerow([rel_time, pos])
     except:
         pass
 
@@ -53,7 +54,7 @@ def connect_serial():
             CONFIG['serial']['baudrate'],
             timeout=CONFIG['serial']['timeout']
         )
-        time.sleep(2)  # Arduino reset delay
+        time.sleep(2)
         connected = True
         status_message = f"✅ Connected to {CONFIG['serial']['port']}"
         print(f"✓ Serial connected: {CONFIG['serial']['port']}")
@@ -83,14 +84,17 @@ def serial_reader():
                 if line.startswith('pos:'):
                     try:
                         pos_val = float(line.split(':')[1])
-                        positions['x'].append(time.time())
-                        positions['y'].append(pos_val)
-                        log_position(time.time(), pos_val)
                         
-                        # Keep last 300 points
-                        if len(positions['x']) > 300:
-                            positions['x'] = positions['x'][-300:]
-                            positions['y'] = positions['y'][-300:]
+                        # RELATIVE TIME FROM DASHBOARD START (0, 0.1, 0.2...)
+                        rel_time = time.time() - start_time
+                        positions['x'].append(rel_time)
+                        positions['y'].append(pos_val)
+                        log_position(rel_time, pos_val)
+                        
+                        # Keep last 400 points for smooth scrolling
+                        if len(positions['x']) > 400:
+                            positions['x'] = positions['x'][-400:]
+                            positions['y'] = positions['y'][-400:]
                     except:
                         pass
             else:
@@ -115,52 +119,48 @@ app = dash.Dash(__name__, external_stylesheets=['/static/style.css'])
 app.title = "BAUV Servo Dashboard"
 
 app.layout = html.Div(className="container", children=[
-    html.H1("🐟 BAUV Servo Dashboard", style={'textAlign': 'center', 'color': '#00d4ff'}),
+    html.H1("🐟 BAUV Tail Flapping Dashboard", style={'textAlign': 'center', 'color': '#00d4ff'}),
     
     html.Div(id='status', style={
         'textAlign': 'center', 'fontSize': '18px', 'fontWeight': 'bold', 
         'padding': '15px', 'borderRadius': '10px', 'margin': '20px 0'
     }),
     
-    dcc.Graph(id='live-plot', style={'height': '450px'}),
+    dcc.Graph(id='live-plot', style={'height': '500px'}),
     dcc.Interval(id='interval', interval=100, n_intervals=0),
     
     html.Div([
-        html.H3("🎚️ Calibrate Mode (Send: 1)", 
-                style={'color': '#00d4ff', 'margin': '30px 0 15px 0'}),
+        html.H3("🎚️ Calibrate Servo", style={'color': '#00d4ff'}),
         html.Div(className="control-panel", children=[
-            html.Label("Servo Angle (0-180°):"),
-            dcc.Slider(
-                id='calib-slider', min=0, max=180, value=90, step=1,
-                marks={i: str(i) for i in range(0, 181, 30)}
-            ),
+            html.Label("Target Angle (0-180°):"),
+            dcc.Slider(id='calib-slider', min=0, max=180, value=90, step=1,
+                      marks={i: str(i) for i in range(0, 181, 30)}),
             html.Br(),
-            html.Button('🚀 CALIBRATE SERVO', id='calib-btn', n_clicks=0,
-                       style={'width': '100%', 'marginTop': '15px'})
+            html.Button('🚀 GO TO ANGLE', id='calib-btn', n_clicks=0,
+                       style={'width': '100%', 'marginTop': '15px', 'fontSize': '16px'})
         ])
-    ]),
+    ], style={'width': '48%', 'display': 'inline-block'}),
     
     html.Div([
-        html.H3("🌊 Oscillate Mode (Send: 2)", 
-                style={'color': '#00d4ff', 'margin': '30px 0 15px 0'}),
+        html.H3("🌊 Tail Flapping", style={'color': '#00d4ff'}),
         html.Div(className="control-panel", children=[
             html.Label("Base Angle:"),
             dcc.Slider(id='base-slider', min=0, max=180, value=90, step=1),
             html.Label("Frequency (Hz):"),
             dcc.Slider(id='freq-slider', min=0.1, max=5.0, value=1.0, step=0.1),
             html.Label("Amplitude (°):"),
-            dcc.Slider(id='amp-slider', min=5, max=60, value=30, step=5),
+            dcc.Slider(id='amp-slider', min=10, max=70, value=40, step=5),
             html.Br(),
-            html.Button('🐠 START TAIL FLAPPING', id='osc-btn', n_clicks=0,
-                       style={'width': '100%', 'marginTop': '15px'})
+            html.Button('🐠 START FLAPPING', id='osc-btn', n_clicks=0,
+                       style={'width': '100%', 'marginTop': '15px', 'fontSize': '16px'})
         ])
-    ]),
+    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
     
     html.Hr(),
-    html.H3("📋 Command Log", style={'color': '#ff6b6b'}),
+    html.H3("📋 Activity Log", style={'color': '#ff6b6b'}),
     html.Div(id='log', style={
         'background': 'rgba(0,0,0,0.3)', 'padding': '20px', 
-        'borderRadius': '10px', 'maxHeight': '200px', 'overflowY': 'auto'
+        'borderRadius': '10px', 'maxHeight': '150px', 'overflowY': 'auto'
     })
 ])
 
@@ -174,35 +174,52 @@ app.layout = html.Div(className="container", children=[
 def update_plot(n):
     global status_message, connected
     
-    # Status styling
     status_style = {
         'textAlign': 'center', 'fontSize': '18px', 'fontWeight': 'bold', 
         'padding': '15px', 'borderRadius': '10px', 'margin': '20px 0'
     }
     if connected:
-        status_style.update({'background': 'rgba(0,255,127,0.2)', 'border': '2px solid #00ff7f'})
+        status_style.update({'background': 'rgba(0,255,127,0.3)', 'border': '3px solid #00ff7f'})
+        status_style.update({'boxShadow': '0 0 20px rgba(0,255,127,0.5)'})
     else:
-        status_style.update({'background': 'rgba(255,100,100,0.2)', 'border': '2px solid #ff6464'})
+        status_style.update({'background': 'rgba(255,100,100,0.3)', 'border': '3px solid #ff6464'})
     
-    # Live plot
     fig = go.Figure()
     if len(positions['x']) > 0:
         df = pd.DataFrame({'time': positions['x'], 'pos': positions['y']})
         fig.add_trace(go.Scatter(
             x=df['time'], y=df['pos'], mode='lines', 
-            name='Tail Position', line=dict(color='#00d4ff', width=4)
+            name='Tail Angle', line=dict(color='#00d4ff', width=5),
+            hovertemplate='Time: %{x:.1f}s<br>Angle: %{y:.1f}°<extra></extra>'
         ))
+        
+        # Add smooth trend line
+        if len(df) > 10:
+            z = np.polyfit(df['time'], df['pos'], 2)
+            trend = np.polyval(z, df['time'])
+            fig.add_trace(go.Scatter(
+                x=df['time'], y=trend, mode='lines', 
+                name='Trend', line=dict(color='#ff6b6b', width=2, dash='dot'),
+                showlegend=False
+            ))
+        
         fig.update_layout(
             title='🦈 Real-time Tail Flapping (ES9257 Servo)',
-            xaxis_title='Time (s)', yaxis_title='Angle (°)',
-            yaxis=dict(range=[0, 180]), height=450,
-            plot_bgcolor='rgba(10,20,40,0.8)', paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#e0e7ff')
+            xaxis_title='Time since start (s)',  # ← FIXED: Clear relative time
+            yaxis_title='Servo Angle (°)',
+            yaxis=dict(range=[0, 180], gridcolor='rgba(255,255,255,0.2)'),
+            plot_bgcolor='rgba(10,25,50,0.8)', 
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#e0e7ff', size=12),
+            height=500,
+            showlegend=True,
+            hovermode='x unified'
         )
     else:
         fig.update_layout(
-            title='📡 Waiting for servo feedback... (Upload .ino code)',
-            height=450, plot_bgcolor='rgba(10,20,40,0.8)'
+            title='📡 Waiting for servo feedback... (Press START FLAPPING)',
+            xaxis_title='Time since start (s)',
+            height=500, plot_bgcolor='rgba(10,25,50,0.8)'
         )
     
     return fig, status_message, status_style
@@ -220,50 +237,45 @@ def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
     global ser, log_messages
     
     ctx = dash.callback_context
-    if not ctx.triggered or not ser or not ser.is_open:
-        return html.Div("Waiting for Arduino connection...", 
-                       style={'color': '#ff6b6b', 'padding': '20px'})
+    if not ctx.triggered:
+        return html.Div()
     
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
     log_entry = []
     
-    try:
-        if button_id == 'calib-btn':
-            ser.write(b'1\n')
-            time.sleep(0.1)
-            ser.write(f"{calib_val:.1f}\n".encode())
-            log_entry.append(f"✅ CALIBRATE: {calib_val}° sent")
-        elif button_id == 'osc-btn':
-            ser.write(b'2\n')
-            time.sleep(0.1)
-            ser.write(f"{base_val:.1f}\n".encode())
-            time.sleep(0.1)
-            ser.write(f"{freq_val:.1f}\n".encode())
-            time.sleep(0.1)
-            ser.write(f"{amp_val:.1f}\n".encode())
-            log_entry.append(f"✅ OSCILLATE: base={base_val}° freq={freq_val}Hz amp={amp_val}°")
-    except Exception as e:
-        log_entry.append(f"❌ Send failed: {str(e)[:50]}")
+    if not ser or not ser.is_open:
+        log_entry.append("❌ Connect Arduino first")
+    else:
+        try:
+            if button_id == 'calib-btn':
+                ser.write(b'1\n')
+                time.sleep(0.2)
+                ser.write(f"{calib_val:.1f}\n".encode())
+                log_entry.append(f"✅ CALIBRATE → {calib_val}°")
+            elif button_id == 'osc-btn':
+                ser.write(b'2\n')
+                time.sleep(0.2)
+                ser.write(f"{base_val:.1f}\n".encode())
+                time.sleep(0.2)
+                ser.write(f"{freq_val:.2f}\n".encode())
+                time.sleep(0.2)
+                ser.write(f"{amp_val:.1f}\n".encode())
+                log_entry.append(f"✅ FLAPPING → base:{base_val}° f:{freq_val}Hz a:{amp_val}°")
+        except Exception as e:
+            log_entry.append(f"❌ Error: {str(e)[:40]}")
     
     log_messages.extend(log_entry)
-    if len(log_messages) > 10:
-        log_messages = log_messages[-10:]
+    if len(log_messages) > 12:
+        log_messages = log_messages[-12:]
     
     return html.Div([
-        html.Ul([html.Li(msg, style={'margin': '8px 0', 'color': '#a0c4ff'}) 
+        html.Ul([html.Li(msg, style={'margin': '6px 0', 'padding': '5px'}) 
                 for msg in log_messages])
     ])
 
 if __name__ == '__main__':
-    print("🚀 BAUV Servo Dashboard v1.0")
-    print(f"📡 Serial: {CONFIG['serial']['port']} @ {CONFIG['serial']['baudrate']}")
-    print("🌐 UI: http://127.0.0.1:8050")
-    print("⚠️  1. Upload servo_controller/servo_controller.ino")
-    print("   2. Close Arduino IDE completely")
-    print("   3. Watch live tail flapping! 🐠")
+    print("🚀 BAUV Tail Dashboard - Relative Time Fixed!")
+    print("🌐 http://127.0.0.1:8050")
+    print("📡 Time starts at 0s → increases smoothly")
     
-    app.run(
-        host=CONFIG['dashboard']['host'],
-        port=CONFIG['dashboard']['port'],
-        debug=CONFIG['dashboard']['debug']
-    )
+    app.run(host='127.0.0.1', port=8050, debug=True)
