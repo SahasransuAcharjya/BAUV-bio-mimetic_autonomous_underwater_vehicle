@@ -27,9 +27,13 @@ data_queue = queue.Queue()
 ser = None
 connected = False
 status_message = "🔄 Connecting to Arduino..."
-positions = {'x': [], 'y': []}  # x=relative time from 0
+
+# Data storage
+positions = {'x': [], 'y': []}
 log_messages = []
-start_time = time.time()  # Reference for relative time
+
+# Time tracking
+session_start_time = None  # Resets when a button is pressed
 
 # Ensure data directory exists
 DATA_DIR = "data"
@@ -66,7 +70,7 @@ def connect_serial():
         return False
 
 def serial_reader():
-    global ser, connected, status_message
+    global ser, connected, status_message, positions, session_start_time
     retry_count = 0
     
     while True:
@@ -85,16 +89,21 @@ def serial_reader():
                     try:
                         pos_val = float(line.split(':')[1])
                         
-                        # RELATIVE TIME FROM DASHBOARD START (0, 0.1, 0.2...)
-                        rel_time = time.time() - start_time
+                        # Initialize start time on very first data point if not set
+                        if session_start_time is None:
+                            session_start_time = time.time()
+                            
+                        # RELATIVE TIME: Always starts from 0s for current session
+                        rel_time = time.time() - session_start_time
+                        
                         positions['x'].append(rel_time)
                         positions['y'].append(pos_val)
                         log_position(rel_time, pos_val)
                         
-                        # Keep last 400 points for smooth scrolling
-                        if len(positions['x']) > 400:
-                            positions['x'] = positions['x'][-400:]
-                            positions['y'] = positions['y'][-400:]
+                        # Keep last 300 points for smooth scrolling
+                        if len(positions['x']) > 300:
+                            positions['x'] = positions['x'][-300:]
+                            positions['y'] = positions['y'][-300:]
                     except:
                         pass
             else:
@@ -189,37 +198,43 @@ def update_plot(n):
         df = pd.DataFrame({'time': positions['x'], 'pos': positions['y']})
         fig.add_trace(go.Scatter(
             x=df['time'], y=df['pos'], mode='lines', 
-            name='Tail Angle', line=dict(color='#00d4ff', width=5),
+            name='Tail Angle', line=dict(color='#00d4ff', width=4),
             hovertemplate='Time: %{x:.1f}s<br>Angle: %{y:.1f}°<extra></extra>'
         ))
         
-        # Add smooth trend line
+        # Add smooth trend line to indicate base angle
         if len(df) > 10:
-            z = np.polyfit(df['time'], df['pos'], 2)
+            z = np.polyfit(df['time'], df['pos'], 1)
             trend = np.polyval(z, df['time'])
             fig.add_trace(go.Scatter(
                 x=df['time'], y=trend, mode='lines', 
-                name='Trend', line=dict(color='#ff6b6b', width=2, dash='dot'),
+                name='Base Trend', line=dict(color='#ff6b6b', width=2, dash='dot'),
                 showlegend=False
             ))
         
+        # Let Plotly auto-scale the X axis based on data (fills screen naturally)
         fig.update_layout(
             title='🦈 Real-time Tail Flapping (ES9257 Servo)',
-            xaxis_title='Time since start (s)',  # ← FIXED: Clear relative time
+            xaxis_title='Time since start (s)',
             yaxis_title='Servo Angle (°)',
+            xaxis=dict(gridcolor='rgba(255,255,255,0.1)', autorange=True),  # <-- This fixes the half-screen!
             yaxis=dict(range=[0, 180], gridcolor='rgba(255,255,255,0.2)'),
             plot_bgcolor='rgba(10,25,50,0.8)', 
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#e0e7ff', size=12),
             height=500,
             showlegend=True,
-            hovermode='x unified'
+            hovermode='x unified',
+            margin=dict(l=50, r=20, t=50, b=50)
         )
     else:
         fig.update_layout(
             title='📡 Waiting for servo feedback... (Press START FLAPPING)',
             xaxis_title='Time since start (s)',
-            height=500, plot_bgcolor='rgba(10,25,50,0.8)'
+            yaxis_title='Servo Angle (°)',
+            yaxis=dict(range=[0, 180]),
+            height=500, plot_bgcolor='rgba(10,25,50,0.8)', paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#e0e7ff')
         )
     
     return fig, status_message, status_style
@@ -234,7 +249,7 @@ def update_plot(n):
     prevent_initial_call=True
 )
 def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
-    global ser, log_messages
+    global ser, log_messages, positions, session_start_time
     
     ctx = dash.callback_context
     if not ctx.triggered:
@@ -247,6 +262,11 @@ def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
         log_entry.append("❌ Connect Arduino first")
     else:
         try:
+            # RESET GRAPH AND TIME TO 0 ON EVERY BUTTON PRESS!
+            positions['x'] = []
+            positions['y'] = []
+            session_start_time = time.time()
+            
             if button_id == 'calib-btn':
                 ser.write(b'1\n')
                 time.sleep(0.2)
@@ -274,8 +294,8 @@ def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
     ])
 
 if __name__ == '__main__':
-    print("🚀 BAUV Tail Dashboard - Relative Time Fixed!")
+    print("🚀 BAUV Tail Dashboard")
     print("🌐 http://127.0.0.1:8050")
-    print("📡 Time starts at 0s → increases smoothly")
+    print("✨ Graph fills screen and resets to 0.0s")
     
     app.run(host='127.0.0.1', port=8050, debug=True)

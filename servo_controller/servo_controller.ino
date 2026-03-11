@@ -61,11 +61,11 @@ void oscillate() {
   Serial.print(" freq="); Serial.print(freq);
   Serial.print(" amp="); Serial.println(amp);
   
-  time = millis() / 1000.0;
-  thres = 10.0 / freq;  // 10 cycles
+  time = millis() / 100.0;
+  thres = 60.0 / freq;  // 10 cycles
   
-  while ((millis() / 1000.0 - time) < thres) {
-    timei = millis() / 1000.0;
+  while ((millis() / 100.0 - time) < thres) {
+    timei = millis() / 100.0;
     pos = base_angle + amp * sin(2 * pi * freq * (timei - time));
     pos = constrain(pos, 0, 180);
     
