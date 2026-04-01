@@ -164,7 +164,7 @@ app.layout = html.Div(className="container", children=[
                        style={'width': '100%', 'marginTop': '15px', 'fontSize': '16px'})
         ])
     ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-    
+     
     html.Hr(),
     html.H3("📋 Activity Log", style={'color': '#ff6b6b'}),
     html.Div(id='log', style={

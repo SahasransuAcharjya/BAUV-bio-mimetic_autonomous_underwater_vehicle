@@ -1,6 +1,6 @@
 {
     "serial": {
-      "port": "COM7",
+      "port": "COM6",
       "baudrate": 9600,
       "timeout": 1.0
     },
