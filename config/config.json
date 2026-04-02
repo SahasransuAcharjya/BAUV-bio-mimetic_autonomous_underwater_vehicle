@@ -14,7 +14,7 @@
       "min_angle": 0,
       "max_angle": 180,
       "default_angle": 90,
-      "max_frequency_hz": 5.0,
+      "max_frequency_hz": 10.0,
       "min_frequency_hz": 0.1,
       "max_amplitude_deg": 60.0,
       "min_amplitude_deg": 5.0
@@ -26,5 +26,4 @@
       "position_file": "servo_positions.csv",
       "serial_log_file": "serial_log.txt"
     }
-  }
-  
+}
