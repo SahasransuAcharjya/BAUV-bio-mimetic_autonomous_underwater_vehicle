@@ -24,7 +24,7 @@ except:
 # Global state
 ser = None
 connected = False
-status_message = "🔄 Connecting to Arduino..."
+status_message = "Connecting to Controller..."
 positions = {'x': [], 'y': []}
 log_messages = []
 session_start_time = None
@@ -53,11 +53,11 @@ def connect_serial():
         )
         time.sleep(2)
         connected = True
-        status_message = f"✅ Connected to {CONFIG['serial']['port']}"
+        status_message = f"System Online: {CONFIG['serial']['port']}"
         return True
     except Exception as e:
         connected = False
-        status_message = "❌ Arduino not ready"
+        status_message = "Controller Offline - Check Connection"
         return False
 
 def serial_reader():
@@ -92,74 +92,105 @@ def serial_reader():
 threading.Thread(target=serial_reader, daemon=True).start()
 
 app = dash.Dash(__name__, external_stylesheets=['/static/style.css'])
-app.title = "BAUV Servo Dashboard"
+app.title = "BAUV Telemetry"
 
 app.layout = html.Div(className="container", children=[
-    html.H1("🐟 BAUV Tail Flapping Dashboard", style={'textAlign': 'center', 'color': '#00d4ff'}),
-    html.Div(id='status', style={'textAlign': 'center', 'padding': '15px', 'borderRadius': '10px', 'margin': '20px 0'}),
-    dcc.Graph(id='live-plot', style={'height': '500px'}),
+    html.H1("BAUV Telemetry Dashboard", style={'textAlign': 'center'}),
+    
+    html.Div(id='status', style={'textAlign': 'center', 'padding': '12px', 'borderRadius': '8px', 'margin': '0 0 20px 0', 'fontWeight': '600'}),
+    
+    dcc.Graph(id='live-plot', style={'height': '450px', 'marginBottom': '30px'}),
     dcc.Interval(id='interval', interval=100, n_intervals=0),
+    
     html.Div([
-        html.H3("🎚️ Calibrate Servo", style={'color': '#00d4ff'}),
+        html.H3("Actuator Calibration"),
         html.Div(className="control-panel", children=[
-            html.Label("Target Angle (0-180°):"),
+            html.Label("Target Angle (0-180°)"),
             dcc.Slider(id='calib-slider', min=0, max=180, value=90, step=1, marks={i: str(i) for i in range(0, 181, 30)}),
-            html.Button('🚀 GO TO ANGLE', id='calib-btn', n_clicks=0, style={'width': '100%', 'marginTop': '15px'})
+            html.Button('Set Angle', id='calib-btn', n_clicks=0, className='btn-primary')
         ])
     ], style={'width': '48%', 'display': 'inline-block'}),
+    
     html.Div([
-        html.H3("🌊 Tail Flapping", style={'color': '#00d4ff'}),
+        html.H3("Kinematic Control"),
         html.Div(className="control-panel", children=[
-            html.Label("Base Angle:"),
+            html.Label("Base Offset Angle (°)"),
             dcc.Slider(id='base-slider', min=0, max=180, value=90, step=1),
-            html.Label("Frequency (Hz):"),
-            # UPDATED: Max frequency set to 10.0
+            html.Label("Oscillation Frequency (Hz)"),
             dcc.Slider(id='freq-slider', min=0.1, max=10.0, value=1.0, step=0.1),
-            html.Label("Amplitude (°):"),
+            html.Label("Sweep Amplitude (°)"),
             dcc.Slider(id='amp-slider', min=10, max=70, value=40, step=5),
-            html.Button('🐠 START FLAPPING', id='osc-btn', n_clicks=0, style={'width': '100%', 'marginTop': '15px', 'backgroundColor': '#00d4ff'}),
-            html.Button('🛑 STOP FLAPPING', id='stop-btn', n_clicks=0, style={'width': '100%', 'marginTop': '10px', 'backgroundColor': '#ff6b6b'})
+            html.Button('Initiate Oscillation', id='osc-btn', n_clicks=0, className='btn-success'),
+            html.Button('Halt Actuator', id='stop-btn', n_clicks=0, className='btn-danger', style={'marginTop': '10px'})
         ])
-    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-    html.Hr(),
-    html.Div(id='log', style={'background': 'rgba(0,0,0,0.3)', 'padding': '20px', 'borderRadius': '10px', 'maxHeight': '150px', 'overflowY': 'auto'})
+    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'float': 'right'}),
+    
+    html.Div(style={'clear': 'both', 'paddingTop': '30px'}),
+    
+    html.H3("System Output Log"),
+    html.Div(id='log', style={'background': '#020617', 'padding': '15px', 'borderRadius': '8px', 'maxHeight': '150px', 'overflowY': 'auto', 'border': '1px solid #1e293b'})
 ])
 
 @callback([Output('live-plot', 'figure'), Output('status', 'children'), Output('status', 'style')], Input('interval', 'n_intervals'))
 def update_plot(n):
-    status_style = {'textAlign': 'center', 'fontSize': '18px', 'fontWeight': 'bold', 'padding': '15px', 'borderRadius': '10px', 'margin': '20px 0'}
-    if connected: status_style.update({'background': 'rgba(0,255,127,0.3)', 'border': '3px solid #00ff7f'})
-    else: status_style.update({'background': 'rgba(255,100,100,0.3)', 'border': '3px solid #ff6464'})
+    status_style = {'textAlign': 'center', 'fontSize': '15px', 'fontWeight': '600', 'padding': '12px', 'borderRadius': '6px'}
+    if connected: 
+        status_style.update({'background': 'rgba(16, 185, 129, 0.1)', 'color': '#10b981', 'border': '1px solid rgba(16, 185, 129, 0.3)'})
+    else: 
+        status_style.update({'background': 'rgba(239, 68, 68, 0.1)', 'color': '#ef4444', 'border': '1px solid rgba(239, 68, 68, 0.3)'})
     
     fig = go.Figure()
     if len(positions['x']) > 0:
-        fig.add_trace(go.Scatter(x=positions['x'], y=positions['y'], mode='lines', name='Tail Angle', line=dict(color='#00d4ff', width=4)))
-        fig.update_layout(title='🦈 Real-time Tail Flapping', xaxis_title='Time (s)', yaxis_title='Angle (°)', yaxis=dict(range=[0, 180]), plot_bgcolor='rgba(10,25,50,0.8)', paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#e0e7ff'))
+        fig.add_trace(go.Scatter(x=positions['x'], y=positions['y'], mode='lines', name='Tail Angle', line=dict(color='#38bdf8', width=3)))
+        
+        # Sleek dark Plotly theme
+        fig.update_layout(
+            title=dict(text='Real-time Actuator Telemetry', font=dict(size=16, color='#f8fafc')),
+            xaxis_title='Time (s)', 
+            yaxis_title='Angle (°)', 
+            yaxis=dict(range=[0, 180], gridcolor='#334155'),
+            xaxis=dict(gridcolor='#334155', autorange=True),
+            plot_bgcolor='#0f172a', 
+            paper_bgcolor='#0f172a', 
+            font=dict(color='#94a3b8'),
+            margin=dict(l=40, r=20, t=50, b=40),
+            hovermode='x unified'
+        )
+    else:
+        fig.update_layout(
+            title=dict(text='Awaiting Telemetry Data...', font=dict(size=16, color='#64748b')),
+            yaxis=dict(range=[0, 180], gridcolor='#334155'),
+            xaxis=dict(gridcolor='#334155'),
+            plot_bgcolor='#0f172a', paper_bgcolor='#0f172a', font=dict(color='#94a3b8')
+        )
     return fig, status_message, status_style
 
 @callback(Output('log', 'children'), [Input('calib-btn', 'n_clicks'), Input('osc-btn', 'n_clicks'), Input('stop-btn', 'n_clicks')], [State('calib-slider', 'value'), State('base-slider', 'value'), State('freq-slider', 'value'), State('amp-slider', 'value')])
 def send_command(c_n, o_n, s_n, c_v, b_v, f_v, a_v):
     global ser, log_messages, positions, session_start_time
     ctx = dash.callback_context
-    if not ctx.triggered or not ser or not ser.is_open: return html.Div("❌ Connection Error")
+    if not ctx.triggered or not ser or not ser.is_open: return html.Div("SYS_ERR: Hardware disconnected.")
     
     btn = ctx.triggered[0]['prop_id'].split('.')[0]
+    timestamp = datetime.now().strftime("%H:%M:%S") if 'datetime' in globals() else ""
     try:
         if btn in ['calib-btn', 'osc-btn']:
             positions['x'], positions['y'] = [], []
             session_start_time = time.time()
+            
         if btn == 'calib-btn':
             ser.write(b'1\n'); time.sleep(0.1); ser.write(f"{c_v:.1f}\n".encode())
-            log_messages.append(f"✅ CALIBRATE → {c_v}°")
+            log_messages.append(f"[{timestamp}] CALIBRATION_SET -> Angle: {c_v}°")
         elif btn == 'osc-btn':
             ser.write(b'2\n'); time.sleep(0.1); ser.write(f"{b_v:.1f}\n".encode()); time.sleep(0.1); ser.write(f"{f_v:.2f}\n".encode()); time.sleep(0.1); ser.write(f"{a_v:.1f}\n".encode())
-            log_messages.append(f"✅ FLAPPING → {f_v}Hz")
+            log_messages.append(f"[{timestamp}] OSCILLATION_INIT -> Base: {b_v}°, Freq: {f_v}Hz, Amp: {a_v}°")
         elif btn == 'stop-btn':
             ser.write(b'3\n')
-            log_messages.append("🛑 STOPPED")
-    except Exception as e: log_messages.append(f"❌ Error: {str(e)}")
+            log_messages.append(f"[{timestamp}] HALT_COMMAND_ISSUED")
+    except Exception as e: log_messages.append(f"[{timestamp}] ERROR: {str(e)}")
     
-    return html.Ul([html.Li(msg) for msg in log_messages[-10:]])
+    return html.Ul([html.Li(msg, style={'margin': '4px 0', 'listStyleType': 'none'}) for msg in log_messages[-10:]], style={'padding': 0, 'margin': 0})
 
 if __name__ == '__main__':
+    from datetime import datetime # Added for log timestamps
     app.run(host='127.0.0.1', port=8050, debug=True)

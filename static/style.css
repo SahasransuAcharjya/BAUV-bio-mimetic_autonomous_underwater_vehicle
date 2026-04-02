@@ -1,179 +1,97 @@
-/* BAUV Servo Dashboard - Underwater Theme */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* static/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, 
-        #0a0e17 0%, 
-        #1a3c5c 30%, 
-        #2a5a8c 70%, 
-        #1a759f 100%);
-    color: #e0e7ff;
-    min-height: 100vh;
-    padding: 20px;
+    background-color: #0f172a; /* Deep Slate Background */
+    color: #e2e8f0; /* Soft White Text */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 30px;
 }
 
-/* Main container */
 .container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
-/* Header styling */
 h1 {
-    text-align: center;
-    background: linear-gradient(90deg, #00d4ff, #0099cc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #f8fafc;
     margin-bottom: 30px;
-    font-size: 2.5em;
-    text-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
 }
 
-/* Status indicator */
-#status {
-    text-align: center;
-    font-size: 1.2em;
-    font-weight: bold;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.status-connected {
-    background: rgba(0, 255, 127, 0.2);
-    border: 2px solid #00ff7f;
-    box-shadow: 0 0 20px rgba(0, 255, 127, 0.3);
-}
-
-.status-disconnected {
-    background: rgba(255, 100, 100, 0.2);
-    border: 2px solid #ff6464;
-    box-shadow: 0 0 20px rgba(255, 100, 100, 0.3);
-}
-
-/* Graph container */
-#live-plot {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-/* Control sections */
 h3 {
-    color: #00d4ff;
-    border-bottom: 2px solid rgba(0, 212, 255, 0.3);
-    padding-bottom: 10px;
-    margin: 30px 0 20px 0;
-    font-size: 1.4em;
-}
-
-/* Control panels */
-.control-panel {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.control-panel label {
-    display: block;
-    margin-bottom: 8px;
-    color: #b0c4de;
-    font-weight: 500;
-}
-
-/* Sliders */
-.dash-slider {
-    --slider-color: #00d4ff;
-    --slider-border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-/* Buttons */
-button {
-    background: linear-gradient(145deg, #00b4d8, #0096c7);
-    border: none;
-    padding: 12px 30px;
-    border-radius: 25px;
-    color: white;
-    font-size: 1.1em;
     font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 8px;
+}
+
+.control-panel {
+    background-color: #1e293b; /* Slightly lighter slate for panels */
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid #334155;
+}
+
+label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+/* Button Styling */
+button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    transition: all 0.2s ease;
 }
 
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(0, 180, 216, 0.4);
-    background: linear-gradient(145deg, #0096c7, #0077a8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 button:active {
-    transform: translateY(0);
+    transform: translateY(1px);
 }
 
-/* Log section */
+.btn-primary {
+    background-color: #0ea5e9;
+    color: white;
+}
+
+.btn-primary:hover { background-color: #0284c7; }
+
+.btn-success {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-success:hover { background-color: #059669; }
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover { background-color: #dc2626; }
+
+/* Activity Log */
 #log {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-    padding: 20px;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-#log ul {
-    list-style: none;
-}
-
-#log li {
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #a0c4ff;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    h1 {
-        font-size: 2em;
-    }
-    
-    .control-panel {
-        padding: 15px;
-    }
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(#00d4ff, #0099cc);
-    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    color: #a7f3d0;
 }
