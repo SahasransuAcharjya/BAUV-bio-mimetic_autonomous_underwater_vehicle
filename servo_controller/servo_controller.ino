@@ -53,7 +53,7 @@ void oscillate() {
   while (Serial.available() == 0) delay(10);
   amp = Serial.parseFloat();
   
-  // UPDATED: Frequency limit increased to 10
+  // Checking for frequency up to 10Hz
   if (!isnan(freq) && freq > 0 && freq <= 10 && !isnan(amp)) {
     oscillating = true;
     time_start = millis();

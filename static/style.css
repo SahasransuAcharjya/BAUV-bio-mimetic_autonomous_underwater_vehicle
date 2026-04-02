@@ -2,8 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 body {
-    background-color: #0f172a; /* Deep Slate Background */
-    color: #e2e8f0; /* Soft White Text */
+    background-color: #0f172a;
+    color: #e2e8f0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
     padding: 30px;
@@ -30,7 +30,7 @@ h3 {
 }
 
 .control-panel {
-    background-color: #1e293b; /* Slightly lighter slate for panels */
+    background-color: #1e293b;
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -46,7 +46,6 @@ label {
     color: #cbd5e1;
 }
 
-/* Button Styling */
 button {
     width: 100%;
     margin-top: 20px;
@@ -59,39 +58,46 @@ button {
     transition: all 0.2s ease;
 }
 
-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
+button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+button:active { transform: translateY(1px); }
 
-button:active {
-    transform: translateY(1px);
-}
-
-.btn-primary {
-    background-color: #0ea5e9;
-    color: white;
-}
-
+.btn-primary { background-color: #0ea5e9; color: white; }
 .btn-primary:hover { background-color: #0284c7; }
 
-.btn-success {
-    background-color: #10b981;
-    color: white;
-}
-
+.btn-success { background-color: #10b981; color: white; }
 .btn-success:hover { background-color: #059669; }
 
-.btn-danger {
-    background-color: #ef4444;
-    color: white;
-}
-
+.btn-danger { background-color: #ef4444; color: white; }
 .btn-danger:hover { background-color: #dc2626; }
 
-/* Activity Log */
 #log {
     font-family: "JetBrains Mono", "Fira Code", monospace;
     font-size: 13px;
     color: #a7f3d0;
+}
+
+/* --- Dash Slider High-Contrast Overrides --- */
+.rc-slider-mark-text {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.rc-slider-mark-text-active {
+    color: #38bdf8 !important;
+    font-weight: 700;
+}
+
+.rc-slider-handle {
+    border: solid 2px #38bdf8 !important;
+    background-color: #0f172a !important;
+}
+
+.rc-slider-handle:hover, .rc-slider-handle:active {
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+}
+
+.rc-slider-track {
+    background-color: #38bdf8 !important;
 }

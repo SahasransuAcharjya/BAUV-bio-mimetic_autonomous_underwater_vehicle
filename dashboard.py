@@ -10,6 +10,7 @@ import pandas as pd
 import json
 import os
 import csv
+from datetime import datetime
 
 # Load configuration
 try:
@@ -143,7 +144,7 @@ def update_plot(n):
     if len(positions['x']) > 0:
         fig.add_trace(go.Scatter(x=positions['x'], y=positions['y'], mode='lines', name='Tail Angle', line=dict(color='#38bdf8', width=3)))
         
-        # Sleek dark Plotly theme
+        # High-contrast bright text layout
         fig.update_layout(
             title=dict(text='Real-time Actuator Telemetry', font=dict(size=16, color='#f8fafc')),
             xaxis_title='Time (s)', 
@@ -152,16 +153,16 @@ def update_plot(n):
             xaxis=dict(gridcolor='#334155', autorange=True),
             plot_bgcolor='#0f172a', 
             paper_bgcolor='#0f172a', 
-            font=dict(color='#94a3b8'),
+            font=dict(color='#f8fafc', size=13), # Updated for high contrast
             margin=dict(l=40, r=20, t=50, b=40),
             hovermode='x unified'
         )
     else:
         fig.update_layout(
-            title=dict(text='Awaiting Telemetry Data...', font=dict(size=16, color='#64748b')),
+            title=dict(text='Awaiting Telemetry Data...', font=dict(size=16, color='#f8fafc')),
             yaxis=dict(range=[0, 180], gridcolor='#334155'),
             xaxis=dict(gridcolor='#334155'),
-            plot_bgcolor='#0f172a', paper_bgcolor='#0f172a', font=dict(color='#94a3b8')
+            plot_bgcolor='#0f172a', paper_bgcolor='#0f172a', font=dict(color='#f8fafc', size=13)
         )
     return fig, status_message, status_style
 
@@ -172,7 +173,7 @@ def send_command(c_n, o_n, s_n, c_v, b_v, f_v, a_v):
     if not ctx.triggered or not ser or not ser.is_open: return html.Div("SYS_ERR: Hardware disconnected.")
     
     btn = ctx.triggered[0]['prop_id'].split('.')[0]
-    timestamp = datetime.now().strftime("%H:%M:%S") if 'datetime' in globals() else ""
+    timestamp = datetime.now().strftime("%H:%M:%S")
     try:
         if btn in ['calib-btn', 'osc-btn']:
             positions['x'], positions['y'] = [], []
@@ -192,5 +193,4 @@ def send_command(c_n, o_n, s_n, c_v, b_v, f_v, a_v):
     return html.Ul([html.Li(msg, style={'margin': '4px 0', 'listStyleType': 'none'}) for msg in log_messages[-10:]], style={'padding': 0, 'margin': 0})
 
 if __name__ == '__main__':
-    from datetime import datetime # Added for log timestamps
     app.run(host='127.0.0.1', port=8050, debug=True)
