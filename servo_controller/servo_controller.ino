@@ -22,6 +22,7 @@ void loop() {
     switch ((int)num) {
       case 1: calibrate(); break;
       case 2: oscillate(); break;
+      case 3: stop_flapping(); break; // NEW: Stop command
       default: Serial.println("unknown"); break;
     }
   }
@@ -40,7 +41,8 @@ void calibrate() {
   if (!isnan(value) && value >= 0 && value <= 180) {
     myservo.write(value);
     pos = value;
-    Serial.print("pos:"); Serial.println(pos, 2);
+    Serial.print("pos:");
+    Serial.println(pos, 2);
     Serial.println("cal:done");
   }
 }
@@ -69,7 +71,8 @@ void oscillate() {
   while (Serial.available() == 0) delay(10);
   amp = Serial.parseFloat();
   if (!isnan(amp) && amp >= 5 && (base_pos - amp >= 0) && (base_pos + amp <= 180)) {
-    Serial.print("amp:"); Serial.println(amp, 2);
+    Serial.print("amp:");
+    Serial.println(amp, 2);
     Serial.println("osc:start");
     
     oscillating = true;
@@ -81,17 +84,19 @@ void run_oscillation() {
   unsigned long current_time = millis();
   float t = (current_time - time_start) / 1000.0;  // Time in seconds
   
-  pos = 90 + amp * sin(2 * pi * freq * t);  // Correct sine wave
+  pos = 90 + amp * sin(2 * pi * freq * t);
+  // Correct sine wave
   pos = constrain(pos, 0, 180);
   myservo.write(pos);
   
   Serial.print("pos:"); Serial.println(pos, 2);
   
-  // Stop after 10 seconds or new command (handled in loop)
-  if ((current_time - time_start) > 10000) {
-    oscillating = false;
-    Serial.println("osc:timeout");
-  }
-  
+  // Note: The 10-second timeout constraint was removed so it flaps continuously
   delay(20);  // 50Hz update rate
+}
+
+// NEW: Function to stop the servo
+void stop_flapping() {
+  oscillating = false;
+  Serial.println("osc:stopped");
 }

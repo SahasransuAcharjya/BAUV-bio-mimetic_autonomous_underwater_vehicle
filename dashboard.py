@@ -160,8 +160,11 @@ app.layout = html.Div(className="container", children=[
             html.Label("Amplitude (°):"),
             dcc.Slider(id='amp-slider', min=10, max=70, value=40, step=5),
             html.Br(),
+            # Modified layout to include the Stop Button
             html.Button('🐠 START FLAPPING', id='osc-btn', n_clicks=0,
-                       style={'width': '100%', 'marginTop': '15px', 'fontSize': '16px'})
+                       style={'width': '100%', 'marginTop': '15px', 'fontSize': '16px', 'backgroundColor': '#00d4ff', 'color': '#000', 'fontWeight': 'bold'}),
+            html.Button('🛑 STOP FLAPPING', id='stop-btn', n_clicks=0,
+                       style={'width': '100%', 'marginTop': '10px', 'fontSize': '16px', 'backgroundColor': '#ff6b6b', 'color': '#fff', 'fontWeight': 'bold', 'border': 'none', 'padding': '10px', 'borderRadius': '5px'})
         ])
     ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
      
@@ -239,16 +242,17 @@ def update_plot(n):
     
     return fig, status_message, status_style
 
+# NEW: Added Input('stop-btn', 'n_clicks') to the callback and send_command arguments
 @callback(
     Output('log', 'children'),
-    [Input('calib-btn', 'n_clicks'), Input('osc-btn', 'n_clicks')],
+    [Input('calib-btn', 'n_clicks'), Input('osc-btn', 'n_clicks'), Input('stop-btn', 'n_clicks')],
     [State('calib-slider', 'value'),
      State('base-slider', 'value'),
      State('freq-slider', 'value'),
      State('amp-slider', 'value')],
     prevent_initial_call=True
 )
-def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
+def send_command(calib_n, osc_n, stop_n, calib_val, base_val, freq_val, amp_val):
     global ser, log_messages, positions, session_start_time
     
     ctx = dash.callback_context
@@ -262,10 +266,11 @@ def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
         log_entry.append("❌ Connect Arduino first")
     else:
         try:
-            # RESET GRAPH AND TIME TO 0 ON EVERY BUTTON PRESS!
-            positions['x'] = []
-            positions['y'] = []
-            session_start_time = time.time()
+            # RESET GRAPH AND TIME TO 0 ON START/CALIBRATE (not on stop)
+            if button_id in ['calib-btn', 'osc-btn']:
+                positions['x'] = []
+                positions['y'] = []
+                session_start_time = time.time()
             
             if button_id == 'calib-btn':
                 ser.write(b'1\n')
@@ -281,6 +286,11 @@ def send_command(calib_n, osc_n, calib_val, base_val, freq_val, amp_val):
                 time.sleep(0.2)
                 ser.write(f"{amp_val:.1f}\n".encode())
                 log_entry.append(f"✅ FLAPPING → base:{base_val}° f:{freq_val}Hz a:{amp_val}°")
+            elif button_id == 'stop-btn':
+                # NEW: Send the '3' command to the Arduino to stop the oscillation loop
+                ser.write(b'3\n')
+                log_entry.append("🛑 FLAPPING STOPPED")
+                
         except Exception as e:
             log_entry.append(f"❌ Error: {str(e)[:40]}")
     
