@@ -7,7 +7,7 @@ from dash import dcc, html, Input, Output, State, callback_context
 import plotly.graph_objects as go
 import serial
 
-PORT = "COM3"   # change this
+PORT = "COM7"   # change this
 BAUD = 115200
 
 servo_data = deque(maxlen=300)

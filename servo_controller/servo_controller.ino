@@ -5,7 +5,7 @@
 Servo myservo;
 MPU6050 mpu;
 
-const int servoPin = 8;
+const int servoPin = 9;
 
 float servoPos = 90.0;
 float basePos = 90.0;
