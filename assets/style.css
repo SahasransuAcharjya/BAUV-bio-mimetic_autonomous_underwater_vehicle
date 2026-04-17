@@ -1,0 +1,268 @@
+/* assets/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 15px; /* Reduced body padding */
+}
+
+/* App Container - Maps to snippet's container */
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Typography */
+.app-title {
+    font-size: 2em;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #f8fafc;
+    margin-bottom: 5px;
+}
+
+.app-subtitle {
+    color: #94a3b8;
+    margin-top: 0;
+    margin-bottom: 30px;
+    font-size: 1.1em;
+}
+
+.header-row {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.card-title {
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 8px;
+}
+
+/* Cards & Panels - Maps to snippet's control-panel */
+.control-card, .graph-card, .status-box {
+    background-color: #1e293b;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid #334155;
+}
+
+/* Status Indicators */
+.compact-status {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 14px;
+    margin: 0 auto 20px;
+    border-radius: 20px;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.status-bg-green {
+    background-color: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+}
+
+.status-bg-red {
+    background-color: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-green {
+    background-color: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.status-red {
+    background-color: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+}
+
+/* Layout Grids */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.graph-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.graph-card:last-child {
+    grid-column: 1 / -1; /* Make the final graph span both columns */
+}
+
+.mpu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 14px;
+}
+
+.mpu-grid div {
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    text-align: center;
+}
+
+.mpu-grid span {
+    color: #94a3b8;
+    margin-right: 8px;
+}
+
+.mpu-grid strong {
+    color: #38bdf8;
+}
+
+/* Inputs & Forms */
+.label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.input-wrap {
+    margin-bottom: 20px;
+}
+
+/* Styling Dash Inputs */
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: #38bdf8;
+}
+
+/* Buttons */
+.button-row {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+button {
+    width: 100%;
+    margin-top: 0 !important; /* Override snippet's top margin for flex layout */
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+button:active { transform: translateY(1px); }
+
+.btn-primary { background-color: #0ea5e9; color: white; }
+.btn-primary:hover { background-color: #0284c7; }
+
+/* Mapping btn-secondary to btn-success from user snippet */
+.btn-secondary { background-color: #10b981; color: white; }
+.btn-secondary:hover { background-color: #059669; }
+
+.btn-danger { background-color: #ef4444; color: white; }
+.btn-danger:hover { background-color: #dc2626; }
+
+/* Log / Output */
+.command-output {
+    margin-top: 20px;
+    padding: 15px;
+    background: #0f172a;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    color: #a7f3d0;
+    min-height: 20px;
+}
+
+/* --- Dash Slider High-Contrast Overrides --- */
+.rc-slider-mark-text {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.rc-slider-mark-text-active {
+    color: #38bdf8 !important;
+    font-weight: 700;
+}
+
+.rc-slider-handle {
+    border: solid 2px #38bdf8 !important;
+    background-color: #0f172a !important;
+}
+
+.rc-slider-handle:hover, .rc-slider-handle:active {
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+}
+
+.rc-slider-track {
+    background-color: #38bdf8 !important;
+}
+
+/* Improve Graph rendering layout inside card */
+.graph-card .js-plotly-plot {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+    .graph-grid {
+        grid-template-columns: 1fr;
+    }
+    .graph-card:last-child {
+        grid-column: 1;
+    }
+    .button-row {
+        flex-direction: column;
+    }
+}
