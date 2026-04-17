@@ -1,77 +1,142 @@
 #include <Servo.h>
+#include <Wire.h>
+#include <MPU6050.h>
 
 Servo myservo;
-float pos = 0;
-int pin = 9;
-unsigned long time_start = 0;
-float pi = 3.14159, amp = 0, freq = 0;
+MPU6050 mpu;
+
+const int servoPin = 8;
+
+float servoPos = 90.0;
+float basePos = 90.0;
+float amp = 0.0;
+float freq = 0.0;
+const float PI_VAL = 3.14159;
+
 bool oscillating = false;
+unsigned long oscillationStart = 0;
+unsigned long lastServoUpdate = 0;
+unsigned long lastMpuUpdate = 0;
 
 void setup() {
-  Serial.begin(9600);
-  myservo.attach(pin);
-  Serial.println("Servo Dashboard Ready");
-  delay(1000);
+  Serial.begin(115200);
+  myservo.attach(servoPin);
+  myservo.write((int)servoPos);
+
+  Wire.begin();
+  Wire.setClock(100000);
+
+  Serial.println("SYS,BOOT");
+  Serial.println("SYS,INIT_MPU");
+
+  mpu.initialize();
+
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6B);
+  Wire.write(0x00);
+  Wire.endTransmission(true);
+
+  if (mpu.testConnection()) {
+    Serial.println("SYS,MPU_OK");
+  } else {
+    Serial.println("SYS,MPU_FAIL");
+  }
+
+  Serial.println("SYS,READY");
 }
 
 void loop() {
-  if (Serial.available()) {
-    float num = Serial.parseFloat();
-    if (isnan(num)) return;
-    
-    switch ((int)num) {
-      case 1: calibrate(); break;
-      case 2: oscillate(); break;
-      case 3: stop_flapping(); break;
-      default: Serial.println("unknown"); break;
+  handleSerialCommands();
+  updateServoOscillation();
+  streamMPU();
+}
+
+void handleSerialCommands() {
+  if (!Serial.available()) return;
+
+  String cmd = Serial.readStringUntil('\n');
+  cmd.trim();
+
+  if (cmd.startsWith("CAL,")) {
+    float angle = cmd.substring(4).toFloat();
+    angle = constrain(angle, 0, 180);
+    servoPos = angle;
+    basePos = angle;
+    oscillating = false;
+    myservo.write((int)servoPos);
+    Serial.print("SERVO,");
+    Serial.println(servoPos, 2);
+    Serial.println("STATUS,CAL_DONE");
+  }
+
+  else if (cmd.startsWith("OSC,")) {
+    int firstComma = cmd.indexOf(',');
+    int secondComma = cmd.indexOf(',', firstComma + 1);
+    int thirdComma = cmd.indexOf(',', secondComma + 1);
+
+    if (firstComma > 0 && secondComma > 0 && thirdComma > 0) {
+      basePos = cmd.substring(firstComma + 1, secondComma).toFloat();
+      freq = cmd.substring(secondComma + 1, thirdComma).toFloat();
+      amp = cmd.substring(thirdComma + 1).toFloat();
+
+      basePos = constrain(basePos, 0, 180);
+      amp = max(0.0, amp);
+
+      if ((basePos - amp) < 0) amp = basePos;
+      if ((basePos + amp) > 180) amp = 180 - basePos;
+
+      oscillating = true;
+      oscillationStart = millis();
+
+      Serial.print("STATUS,OSC_START,");
+      Serial.print(basePos, 2);
+      Serial.print(",");
+      Serial.print(freq, 2);
+      Serial.print(",");
+      Serial.println(amp, 2);
     }
   }
-  
-  if (oscillating) {
-    run_oscillation();
+
+  else if (cmd == "STOP") {
+    oscillating = false;
+    myservo.write((int)basePos);
+    servoPos = basePos;
+    Serial.print("SERVO,");
+    Serial.println(servoPos, 2);
+    Serial.println("STATUS,OSC_STOP");
   }
 }
 
-void calibrate() {
-  while (Serial.available() == 0) delay(10);
-  float value = Serial.parseFloat();
-  if (!isnan(value) && value >= 0 && value <= 180) {
-    myservo.write(value);
-    pos = value;
-    Serial.print("pos:"); Serial.println(pos, 2);
-  }
+void updateServoOscillation() {
+  if (!oscillating) return;
+
+  unsigned long now = millis();
+  if (now - lastServoUpdate < 20) return;  // ~50 Hz update
+  lastServoUpdate = now;
+
+  float t = (now - oscillationStart) / 1000.0;
+  servoPos = basePos + amp * sin(2.0 * PI_VAL * freq * t);
+  servoPos = constrain(servoPos, 0, 180);
+
+  myservo.write((int)servoPos);
+
+  Serial.print("SERVO,");
+  Serial.println(servoPos, 2);
 }
 
-void oscillate() {
-  float base_pos;
-  while (Serial.available() == 0) delay(10);
-  base_pos = Serial.parseFloat();
-  
-  while (Serial.available() == 0) delay(10);
-  freq = Serial.parseFloat();
-  
-  while (Serial.available() == 0) delay(10);
-  amp = Serial.parseFloat();
-  
-  // Checking for frequency up to 10Hz
-  if (!isnan(freq) && freq > 0 && freq <= 10 && !isnan(amp)) {
-    oscillating = true;
-    time_start = millis();
-    Serial.println("osc:start");
-  }
-}
+void streamMPU() {
+  unsigned long now = millis();
+  if (now - lastMpuUpdate < 100) return;   // 10 Hz stream
+  lastMpuUpdate = now;
 
-void run_oscillation() {
-  unsigned long current_time = millis();
-  float t = (current_time - time_start) / 1000.0;
-  pos = 90 + amp * sin(2 * pi * freq * t);
-  pos = constrain(pos, 0, 180);
-  myservo.write(pos);
-  Serial.print("pos:"); Serial.println(pos, 2);
-  delay(20); 
-}
+  int16_t ax, ay, az, gx, gy, gz;
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
-void stop_flapping() {
-  oscillating = false;
-  Serial.println("osc:stopped");
+  Serial.print("MPU,");
+  Serial.print(ax); Serial.print(",");
+  Serial.print(ay); Serial.print(",");
+  Serial.print(az); Serial.print(",");
+  Serial.print(gx); Serial.print(",");
+  Serial.print(gy); Serial.print(",");
+  Serial.println(gz);
 }
