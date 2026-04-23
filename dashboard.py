@@ -286,4 +286,4 @@ def handle_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8050)
+    app.run(debug=True, port=8050) 
