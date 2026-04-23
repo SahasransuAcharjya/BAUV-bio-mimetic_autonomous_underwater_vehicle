@@ -25,6 +25,7 @@ void setup() {
 
   Wire.begin();
   Wire.setClock(100000);
+  Wire.setWireTimeout(3000, true);
 
   Serial.println("SYS,BOOT");
   Serial.println("SYS,INIT_MPU");
