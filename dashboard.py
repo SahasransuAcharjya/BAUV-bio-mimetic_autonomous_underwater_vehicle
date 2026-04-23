@@ -179,6 +179,10 @@ app.layout = html.Div([
         html.Div([
             html.H3("MPU6050 Live Readings", className="card-title"),
             html.Div(className="section-divider"),
+            html.Div([
+                html.Button("Start MPU", id="mpu-start-btn", n_clicks=0, className="btn-primary"),
+                html.Button("Stop MPU", id="mpu-stop-btn", n_clicks=0, className="btn-danger", style={"marginLeft": "10px"}),
+            ], className="button-row", style={"marginBottom": "15px"}),
             html.Div(id="mpu-readings", className="mpu-grid")
         ], className="control-card")
     ], className="main-grid"),
@@ -254,12 +258,14 @@ def update_graphs(n):
     Input("cal-btn", "n_clicks"),
     Input("osc-btn", "n_clicks"),
     Input("stop-btn", "n_clicks"),
+    Input("mpu-start-btn", "n_clicks"),
+    Input("mpu-stop-btn", "n_clicks"),
     Input("angle-slider", "value"),
     State("freq-input", "value"),
     State("amp-input", "value"),
     prevent_initial_call=True
 )
-def handle_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
+def handle_commands(cal_clicks, osc_clicks, stop_clicks, mpu_start_clicks, mpu_stop_clicks, angle, freq, amp):
     ctx = callback_context
     if not ctx.triggered:
         return ""
@@ -272,6 +278,10 @@ def handle_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
         cmd = f"OSC,{angle},{freq},{amp}"
     elif trigger_id == "stop-btn":
         cmd = "STOP"
+    elif trigger_id == "mpu-start-btn":
+        cmd = "MPU_START"
+    elif trigger_id == "mpu-stop-btn":
+        cmd = "MPU_STOP"
     elif trigger_id == "angle-slider":
         cmd = f"CAL,{angle}"
     else:

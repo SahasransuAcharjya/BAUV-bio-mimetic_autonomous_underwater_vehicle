@@ -17,15 +17,25 @@ bool oscillating = false;
 unsigned long oscillationStart = 0;
 unsigned long lastServoUpdate = 0;
 unsigned long lastMpuUpdate = 0;
+bool streamingMpu = true;
 
 void setup() {
   Serial.begin(115200);
   myservo.attach(servoPin);
   myservo.write((int)servoPos);
 
+  // Forcibly clear any stuck I2C devices (like the MPU6050) that might be holding SDA low
+  pinMode(SDA, INPUT_PULLUP);
+  pinMode(SCL, OUTPUT);
+  for (int i = 0; i < 9; i++) {
+    digitalWrite(SCL, LOW);
+    delayMicroseconds(10);
+    digitalWrite(SCL, HIGH);
+    delayMicroseconds(10);
+  }
+  
   Wire.begin();
   Wire.setClock(100000);
-  Wire.setWireTimeout(3000, true);
 
   Serial.println("SYS,BOOT");
   Serial.println("SYS,INIT_MPU");
@@ -106,6 +116,16 @@ void handleSerialCommands() {
     Serial.println(servoPos, 2);
     Serial.println("STATUS,OSC_STOP");
   }
+
+  else if (cmd.startsWith("MPU_START")) {
+    streamingMpu = true;
+    Serial.println("STATUS,MPU_STREAM_START");
+  }
+
+  else if (cmd.startsWith("MPU_STOP")) {
+    streamingMpu = false;
+    Serial.println("STATUS,MPU_STREAM_STOP");
+  }
 }
 
 void updateServoOscillation() {
@@ -126,26 +146,14 @@ void updateServoOscillation() {
 }
 
 void streamMPU() {
+  if (!streamingMpu) return;
+
   unsigned long now = millis();
   if (now - lastMpuUpdate < 100) return;   // 10 Hz stream
   lastMpuUpdate = now;
 
-  // Pre-initialize with zeros. Since gravity prevents all axes from being exactly 0,
-  // if they remain 0, we can definitively detect that the I2C read silently failed!
-  int16_t ax = 0, ay = 0, az = 0, gx = 0, gy = 0, gz = 0;
+  int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-
-  if (ax == 0 && ay == 0 && az == 0 && gx == 0 && gy == 0 && gz == 0) {
-    Serial.println("STATUS,MPU_I2C_RECOVERING");
-    // Hardware reset the I2C bus and sensor state
-    Wire.end();
-    delay(10);
-    Wire.begin();
-    Wire.setClock(100000);
-    Wire.setWireTimeout(3000, true);
-    mpu.initialize();
-    return; // Skip sending invalid telemetry for this cycle
-  }
 
   Serial.print("MPU,");
   Serial.print(ax); Serial.print(",");
