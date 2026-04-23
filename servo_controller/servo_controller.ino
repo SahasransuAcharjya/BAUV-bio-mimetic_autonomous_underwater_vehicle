@@ -98,7 +98,7 @@ void handleSerialCommands() {
     }
   }
 
-  else if (cmd == "STOP") {
+  else if (cmd.startsWith("STOP")) {
     oscillating = false;
     myservo.write((int)basePos);
     servoPos = basePos;
@@ -130,8 +130,22 @@ void streamMPU() {
   if (now - lastMpuUpdate < 100) return;   // 10 Hz stream
   lastMpuUpdate = now;
 
-  int16_t ax, ay, az, gx, gy, gz;
+  // Pre-initialize with zeros. Since gravity prevents all axes from being exactly 0,
+  // if they remain 0, we can definitively detect that the I2C read silently failed!
+  int16_t ax = 0, ay = 0, az = 0, gx = 0, gy = 0, gz = 0;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+  if (ax == 0 && ay == 0 && az == 0 && gx == 0 && gy == 0 && gz == 0) {
+    Serial.println("STATUS,MPU_I2C_RECOVERING");
+    // Hardware reset the I2C bus and sensor state
+    Wire.end();
+    delay(10);
+    Wire.begin();
+    Wire.setClock(100000);
+    Wire.setWireTimeout(3000, true);
+    mpu.initialize();
+    return; // Skip sending invalid telemetry for this cycle
+  }
 
   Serial.print("MPU,");
   Serial.print(ax); Serial.print(",");
