@@ -139,4 +139,9 @@ void streamMPU() {
   Serial.print(gx); Serial.print(",");
   Serial.print(gy); Serial.print(",");
   Serial.println(gz);
+  
+  if (!oscillating) {
+    Serial.print("SERVO,");
+    Serial.println(servoPos, 2);
+  }
 }

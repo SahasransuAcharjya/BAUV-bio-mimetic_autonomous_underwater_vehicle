@@ -137,7 +137,8 @@ app.layout = html.Div([
         html.Div([
             html.H1("BAUV Servo + MPU6050 Dashboard", className="app-title"),
             html.P("Real-time monitoring and control for servo motion and inertial sensing.", className="app-subtitle"),
-            html.Div(id="status-container")
+            html.Div(id="status-container"),
+            html.Button("Reconnect Serial", id="reconnect-btn", n_clicks=0, className="btn-primary", style={"marginTop": "10px"})
         ])
     ], className="header-row"),
 
@@ -266,13 +267,13 @@ def handle_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
     trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
     
     if trigger_id == "cal-btn":
-        cmd = "CAL"
+        cmd = f"CAL,{angle}"
     elif trigger_id == "osc-btn":
-        cmd = f"OSC,{freq},{amp}"
+        cmd = f"OSC,{angle},{freq},{amp}"
     elif trigger_id == "stop-btn":
         cmd = "STOP"
     elif trigger_id == "angle-slider":
-        cmd = f"SET,{angle}"
+        cmd = f"CAL,{angle}"
     else:
         return ""
         
@@ -283,6 +284,16 @@ def handle_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
         return "Serial not connected"
     except Exception as e:
         return f"Error sending: {e}"
+
+
+@app.callback(
+    Output("reconnect-btn", "className"),
+    Input("reconnect-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def handle_reconnect(n_clicks):
+    connect_serial()
+    return "btn-primary"
 
 
 if __name__ == "__main__":
