@@ -34,10 +34,41 @@ void setup() {
     delayMicroseconds(10);
   }
   
+  // Generate STOP condition to properly reset the bus
+  pinMode(SDA, OUTPUT);
+  digitalWrite(SDA, LOW);
+  delayMicroseconds(10);
+  digitalWrite(SCL, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(SDA, HIGH);
+  delayMicroseconds(10);
+  
+  // Set back to input before wire begin
+  pinMode(SDA, INPUT);
+  pinMode(SCL, INPUT);
+  
   Wire.begin();
   Wire.setClock(100000);
 
   Serial.println("SYS,BOOT");
+  
+  // I2C Scanner
+  Serial.println("SYS,SCANNING I2C...");
+  byte error, address;
+  int nDevices = 0;
+  for(address = 1; address < 127; address++ ) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.print("SYS,I2C_FOUND_0x");
+      Serial.println(address, HEX);
+      nDevices++;
+    }
+  }
+  if (nDevices == 0) {
+    Serial.println("SYS,I2C_NO_DEVICES");
+  }
+
   Serial.println("SYS,INIT_MPU");
 
   mpu.initialize();
@@ -49,8 +80,10 @@ void setup() {
 
   if (mpu.testConnection()) {
     Serial.println("SYS,MPU_OK");
+    streamingMpu = true;
   } else {
     Serial.println("SYS,MPU_FAIL");
+    streamingMpu = false;  // DO NOT stream if MPU is disconnected
   }
 
   Serial.println("SYS,READY");

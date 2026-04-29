@@ -183,6 +183,7 @@ app.layout = html.Div([
                 html.Button("Start MPU", id="mpu-start-btn", n_clicks=0, className="btn-primary"),
                 html.Button("Stop MPU", id="mpu-stop-btn", n_clicks=0, className="btn-danger", style={"marginLeft": "10px"}),
             ], className="button-row", style={"marginBottom": "15px"}),
+            html.Div(id="mpu-command-output", className="command-output", style={"marginBottom": "15px"}),
             html.Div(id="mpu-readings", className="mpu-grid")
         ], className="control-card")
     ], className="main-grid"),
@@ -211,7 +212,7 @@ app.layout = html.Div([
 )
 def update_status(n):
     bg_class = "status-bg-green" if connected else "status-bg-red"
-    text = f"System Status: {'Connected' if connected else 'Disconnected'}"
+    text = f"System Status: {latest_status}"
     return html.Div(text, className=f"compact-status {bg_class}")
 
 
@@ -237,24 +238,38 @@ def update_mpu(n):
     Input("update-interval", "n_intervals")
 )
 def update_graphs(n):
+    try:
+        s_time = list(servo_time)
+        s_data = list(servo_data)
+        m_time = list(mpu_time)
+        ax = list(ax_data)
+        ay = list(ay_data)
+        az = list(az_data)
+        gx = list(gx_data)
+        gy = list(gy_data)
+        gz = list(gz_data)
+    except RuntimeError:
+        raise dash.exceptions.PreventUpdate
+
     servo_fig = make_dark_figure("Servo Angle", "Angle (deg)", y_range=[0, 180])
-    servo_fig.add_trace(go.Scatter(x=list(servo_time), y=list(servo_data), mode="lines", name="Angle", line=dict(color="#3b82f6", width=2)))
+    servo_fig.add_trace(go.Scatter(x=s_time, y=s_data, mode="lines", name="Angle", line=dict(color="#3b82f6", width=2)))
 
     accel_fig = make_dark_figure("Linear Acceleration", "g")
-    accel_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(ax_data), mode="lines", name="Ax", line=dict(color="#ef4444")))
-    accel_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(ay_data), mode="lines", name="Ay", line=dict(color="#10b981")))
-    accel_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(az_data), mode="lines", name="Az", line=dict(color="#3b82f6")))
+    accel_fig.add_trace(go.Scatter(x=m_time, y=ax, mode="lines", name="Ax", line=dict(color="#ef4444")))
+    accel_fig.add_trace(go.Scatter(x=m_time, y=ay, mode="lines", name="Ay", line=dict(color="#10b981")))
+    accel_fig.add_trace(go.Scatter(x=m_time, y=az, mode="lines", name="Az", line=dict(color="#3b82f6")))
 
     gyro_fig = make_dark_figure("Angular Velocity", "deg/s")
-    gyro_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(gx_data), mode="lines", name="Gx", line=dict(color="#f59e0b")))
-    gyro_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(gy_data), mode="lines", name="Gy", line=dict(color="#8b5cf6")))
-    gyro_fig.add_trace(go.Scatter(x=list(mpu_time), y=list(gz_data), mode="lines", name="Gz", line=dict(color="#ec4899")))
+    gyro_fig.add_trace(go.Scatter(x=m_time, y=gx, mode="lines", name="Gx", line=dict(color="#f59e0b")))
+    gyro_fig.add_trace(go.Scatter(x=m_time, y=gy, mode="lines", name="Gy", line=dict(color="#8b5cf6")))
+    gyro_fig.add_trace(go.Scatter(x=m_time, y=gz, mode="lines", name="Gz", line=dict(color="#ec4899")))
 
     return servo_fig, accel_fig, gyro_fig
 
 
 @app.callback(
-    Output("command-output", "children"),
+    [Output("command-output", "children"),
+     Output("mpu-command-output", "children")],
     Input("cal-btn", "n_clicks"),
     Input("osc-btn", "n_clicks"),
     Input("stop-btn", "n_clicks"),
@@ -290,10 +305,16 @@ def handle_commands(cal_clicks, osc_clicks, stop_clicks, mpu_start_clicks, mpu_s
     try:
         if ser and ser.is_open:
             ser.write((cmd + "\n").encode())
-            return f"Sent: {cmd}"
-        return "Serial not connected"
+            msg = f"Sent: {cmd}"
+        else:
+            msg = "Serial not connected"
+            
+        if trigger_id in ["mpu-start-btn", "mpu-stop-btn"]:
+            return "", msg
+        return msg, ""
     except Exception as e:
-        return f"Error sending: {e}"
+        err = f"Error sending: {e}"
+        return err, err
 
 
 @app.callback(
