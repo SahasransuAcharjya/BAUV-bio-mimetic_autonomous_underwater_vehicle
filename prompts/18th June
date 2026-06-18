@@ -1,3 +1,0 @@
-I want you to redesign the code as follows:
-I don't want one file for the whole code rather I want you to create a tail.py (that consists the code to operate the tail) file, imu.py file (that consists the code to operate the sensor) and a main.py file that will be running the whole program so that editting of the code in future will be easier.
-And make sure to make no other changes, not in the concept of code or design of dashboard.

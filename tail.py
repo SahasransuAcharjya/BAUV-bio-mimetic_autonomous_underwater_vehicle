@@ -114,14 +114,14 @@ def register_callbacks(app, send_command_func, make_dark_figure_func):
                 cmd = f"OSC,{angle},{freq},{amp}"
                 new_state = "none"
             else:
-                cmd = "CAL,72"
+                cmd = f"OSC,85.0,{freq},5.0"
                 new_state = "left"
         elif trigger_id == "right-btn":
             if turn_state == "right":
                 cmd = f"OSC,{angle},{freq},{amp}"
                 new_state = "none"
             else:
-                cmd = "CAL,108"
+                cmd = f"OSC,105.0,{freq},5.0"
                 new_state = "right"
         else:
             return dash.no_update, turn_state, dash.no_update, dash.no_update
