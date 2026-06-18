@@ -15,6 +15,7 @@ def get_control_layout():
     return html.Div([
         html.H3("Servo Control", className="card-title"),
         html.Div(className="section-divider"),
+        dcc.Store(id="turn-state", data="none"),
 
         html.Div([
             html.Label("Base Angle", className="label"),
@@ -42,6 +43,11 @@ def get_control_layout():
             html.Button("Stop", id="stop-btn", n_clicks=0, className="btn-danger"),
         ], className="button-row"),
 
+        html.Div([
+            html.Button("Turn Left", id="left-btn", n_clicks=0, className="btn-secondary"),
+            html.Button("Turn Right", id="right-btn", n_clicks=0, className="btn-secondary"),
+        ], className="button-row", style={"marginTop": "10px"}),
+
         html.Div(id="command-output", className="command-output")
     ], className="control-card")
 
@@ -68,33 +74,63 @@ def register_callbacks(app, send_command_func, make_dark_figure_func):
 
     @app.callback(
         Output("command-output", "children"),
+        Output("turn-state", "data"),
+        Output("left-btn", "className"),
+        Output("right-btn", "className"),
         Input("cal-btn", "n_clicks"),
         Input("osc-btn", "n_clicks"),
         Input("stop-btn", "n_clicks"),
         Input("angle-slider", "value"),
+        Input("left-btn", "n_clicks"),
+        Input("right-btn", "n_clicks"),
         State("freq-input", "value"),
         State("amp-input", "value"),
+        State("turn-state", "data"),
         prevent_initial_call=True
     )
-    def handle_servo_commands(cal_clicks, osc_clicks, stop_clicks, angle, freq, amp):
+    def handle_servo_commands(cal_clicks, osc_clicks, stop_clicks, angle, left_clicks, right_clicks, freq, amp, turn_state):
         ctx = callback_context
         if not ctx.triggered:
-            return dash.no_update
+            return dash.no_update, turn_state, dash.no_update, dash.no_update
         
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        cmd = ""
+        new_state = turn_state
         
         if trigger_id == "cal-btn":
             cmd = f"CAL,{angle}"
+            new_state = "none"
         elif trigger_id == "osc-btn":
             cmd = f"OSC,{angle},{freq},{amp}"
+            new_state = "none"
         elif trigger_id == "stop-btn":
             cmd = "STOP"
+            new_state = "none"
         elif trigger_id == "angle-slider":
             cmd = f"CAL,{angle}"
+            new_state = "none"
+        elif trigger_id == "left-btn":
+            if turn_state == "left":
+                cmd = f"OSC,{angle},{freq},{amp}"
+                new_state = "none"
+            else:
+                cmd = "CAL,108"
+                new_state = "left"
+        elif trigger_id == "right-btn":
+            if turn_state == "right":
+                cmd = f"OSC,{angle},{freq},{amp}"
+                new_state = "none"
+            else:
+                cmd = "CAL,72"
+                new_state = "right"
         else:
-            return dash.no_update
+            return dash.no_update, turn_state, dash.no_update, dash.no_update
             
         msg, err = send_command_func(cmd)
+        
+        left_class = "btn-primary" if new_state == "left" else "btn-secondary"
+        right_class = "btn-primary" if new_state == "right" else "btn-secondary"
+        
         if err:
-            return err
-        return msg
+            return err, new_state, left_class, right_class
+        return msg, new_state, left_class, right_class
