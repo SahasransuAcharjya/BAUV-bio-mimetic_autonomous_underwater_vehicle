@@ -7,6 +7,7 @@ import serial
 
 import tail
 import imu
+import keyboard_controls
 
 PORT = "COM7"   # change this
 BAUD = 115200
@@ -115,8 +116,10 @@ app.title = "BAUV Hardware Dashboard"
 # Register callbacks from modules
 tail.register_callbacks(app, send_command, make_dark_figure)
 imu.register_callbacks(app, send_command, make_dark_figure)
+keyboard_controls.register_keyboard_callbacks(app)
 
 app.layout = html.Div([
+    keyboard_controls.get_keyboard_layout(),
     html.Div([
         html.Div([
             html.H1("BAUV Servo + MPU6050 Dashboard", className="app-title"),
